@@ -11,79 +11,118 @@
 
 ## Overview
 
-**Automatic Logistics Command Center (ALCC)** simulates a worldwide autonomous transport company operating **1,000 virtual vehicles**. Each vehicle moves, consumes fuel, generates incidents, receives missions, and streams real-time telemetry — without any physical hardware.
+**Automatic Logistics Command Center (ALCC)** simulates a worldwide autonomous transport company operating **1,000 virtual vehicles**. Each vehicle moves, consumes fuel, generates incidents, receives missions, and streams real-time telemetry at **1 Hz** — without any physical hardware.
 
-The platform provides fleet operators and dispatchers with a live command dashboard and lays the foundation for future AI-driven optimization (routing, fuel, maintenance).
+## Features
 
-## Architecture (Target)
+| Module | Capabilities |
+|--------|-------------|
+| **Auth** | JWT authentication, RBAC (Admin, Operator, Dispatcher, Analyst) |
+| **Fleet** | Vehicle CRUD, virtual drivers, state management, fleet stats |
+| **Routing** | Mission creation, vehicle assignment, dispatch, completion |
+| **Tracking** | Live telemetry, history, Redis-cached positions |
+| **Simulator** | 1000-vehicle engine: movement, fuel, probabilistic incidents |
+| **WebSocket** | Real-time dashboard feed via Redis Pub/Sub |
+| **Notifications** | Alerts, incident tracking, resolution workflow |
+| **Analytics** | Fleet/mission/incident KPIs, full dashboard summary |
+| **Celery** | Async route optimization, maintenance scheduling, analytics |
+| **Dashboard** | Built-in HTML command center with live KPIs |
+| **DevOps** | Docker Compose, GitHub Actions CI, Prometheus metrics |
+
+## Architecture
 
 ```
-┌─────────────────┐     WebSocket      ┌──────────────┐
-│  1000 Vehicles  │ ─────────────────► │    Redis     │
-│   (Simulator)   │                    │  Pub/Sub +   │
-└─────────────────┘                    │    Cache     │
-                                       └──────┬───────┘
-                                              │
-                                       ┌──────▼───────┐
-                                       │   FastAPI    │
-                                       │  API Gateway │
-                                       └──────┬───────┘
-                                              │
-                              ┌───────────────┼───────────────┐
-                              │               │               │
-                        Dashboard        PostgreSQL        Celery
-                       (Real-time)       (Persistence)    (Async Jobs)
+1000 Vehicles (Simulator) ──► Redis Pub/Sub ──► WebSocket ──► Dashboard
+                                      │
+                                 FastAPI Gateway
+                                      │
+                    ┌─────────────────┼─────────────────┐
+                    │                 │                 │
+               PostgreSQL          Celery           JWT Auth
+              (Persistence)      (Async Jobs)      (RBAC)
 ```
 
-## Tech Stack
+## Quick Start
 
-| Layer | Technology |
-|-------|------------|
-| API | FastAPI, JWT |
-| Real-time | WebSockets, Redis Pub/Sub |
-| Persistence | PostgreSQL |
-| Async tasks | Celery |
-| Testing | Pytest (unit, integration, E2E) |
-| DevOps | Docker, GitHub Actions, Kubernetes-ready |
+### Docker (recommended)
 
-## Domain Model (Bounded Contexts)
+```bash
+cp .env.example .env
+docker compose up --build
+```
 
-| Context | Responsibility |
-|---------|----------------|
-| **Auth** | Authentication, authorization, RBAC |
-| **Fleet** | Vehicles, virtual drivers, fleet lifecycle |
-| **Tracking** | GPS telemetry, speed, vehicle state (1 Hz) |
-| **Routing** | Missions, route assignment, optimization |
-| **Notification** | Alerts, incidents, event delivery |
-| **Analytics** | KPIs, dashboards, reporting |
+Open [http://localhost:8000](http://localhost:8000) for the command center dashboard.
 
-## Project Status
+API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-| Phase | Status |
-|-------|--------|
-| Design & Architecture | 🔄 In progress |
-| Core Implementation | ⏳ Planned |
-| Real-time Pipeline | ⏳ Planned |
-| CI/CD & Docker | ⏳ Planned |
-| Kubernetes Deployment | ⏳ Planned |
+### Local Development
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+pip install -e .
+
+# Start PostgreSQL + Redis (or use docker compose up postgres redis)
+cp .env.example .env
+python scripts/seed_users.py
+
+uvicorn alcc.main:app --reload --app-dir src
+```
+
+### Default Users
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@alcc.io | admin1234 | Admin |
+| dispatcher@alcc.io | dispatch123 | Dispatcher |
+| operator@alcc.io | operator123 | Operator |
+| analyst@alcc.io | analyst123 | Analyst |
+
+## API Endpoints
+
+| Prefix | Description |
+|--------|-------------|
+| `/api/v1/auth` | Register, login, profile |
+| `/api/v1/fleet` | Vehicles, drivers, fleet stats |
+| `/api/v1/missions` | Mission lifecycle |
+| `/api/v1/tracking` | Telemetry queries, live fleet |
+| `/api/v1/notifications` | Alerts and incidents |
+| `/api/v1/analytics` | KPIs and dashboard data |
+| `/api/v1/tasks` | Celery async task triggers |
+| `/ws/dashboard` | WebSocket real-time feed |
+| `/health` | Health check |
+| `/metrics` | Prometheus metrics |
+
+## Project Structure
+
+```
+src/alcc/
+├── auth/           # JWT, RBAC
+├── fleet/          # Vehicles, virtual drivers
+├── routing/        # Missions, dispatch
+├── tracking/       # Telemetry
+├── notification/   # Alerts, incidents
+├── analytics/      # KPIs
+├── simulator/      # 1000-vehicle engine
+├── worker/         # Celery tasks
+└── shared/         # Domain base, DB, Redis, WebSocket
+```
+
+## Testing
+
+```bash
+pytest tests/ -v --cov=alcc
+```
 
 ## Documentation
-
-All design artifacts live under [`docs/`](docs/):
 
 ```
 docs/
 ├── design/
-│   └── 01-business-analysis.md   # Vision, actors, rules, KPIs
-└── architecture/                 # Domain models, infra, security, deployment
+│   └── 01-business-analysis.md
+└── architecture/
 ```
-
-## Branch Strategy
-
-| Branch | Purpose |
-|--------|---------|
-| `main` | Stable documentation and releases |
-| `develop` | Active design and implementation work |
 
 ## Author
 
