@@ -8,7 +8,7 @@ on:
 
 env:
   TESTING: "true"
-  DATABASE_URL: sqlite+aiosqlite:///:memory:
+  DATABASE_URL: "sqlite+aiosqlite:///:memory:"
   JWT_SECRET_KEY: test-secret
   SECRET_KEY: test-secret
 
