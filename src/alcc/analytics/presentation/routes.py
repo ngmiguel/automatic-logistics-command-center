@@ -99,6 +99,18 @@ async def incident_analytics(
     return await _compute_incident_kpis(session)
 
 
+@router.get("/public/summary")
+async def public_summary(
+    session: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """Public KPI summary for the embedded command center dashboard."""
+    return {
+        "fleet": await _compute_fleet_kpis(session),
+        "missions": await _compute_mission_kpis(session),
+        "incidents": await _compute_incident_kpis(session),
+    }
+
+
 @router.get("/dashboard")
 async def full_dashboard(
     session: AsyncSession = Depends(get_db_session),

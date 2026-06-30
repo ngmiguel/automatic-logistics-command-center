@@ -11,7 +11,7 @@ from alcc.notification.infrastructure.repositories import IncidentRepository, No
 from alcc.routing.domain.entities import Mission
 from alcc.routing.infrastructure.repositories import MissionRepository
 from alcc.shared.domain.enums import IncidentSeverity, NotificationType, VehicleState
-from alcc.shared.infrastructure.database.session import AsyncSessionLocal
+from alcc.shared.infrastructure.database.session import get_session_factory, init_db
 from alcc.shared.infrastructure.logging import get_logger
 from alcc.shared.infrastructure.redis_client import NOTIFICATION_CHANNEL, redis_client
 from alcc.tracking.domain.entities import TelemetrySnapshot
@@ -49,7 +49,7 @@ class VehicleSimulator:
 
     async def seed_fleet(self, count: int | None = None) -> int:
         count = count or settings.simulator_vehicle_count
-        async with AsyncSessionLocal() as session:
+        async with get_session_factory()() as session:
             repo = VehicleRepository(session)
             existing = await repo.count()
             if existing >= count:
@@ -101,7 +101,7 @@ class VehicleSimulator:
             await asyncio.sleep(settings.simulator_tick_interval_seconds)
 
     async def _process_tick(self) -> None:
-        async with AsyncSessionLocal() as session:
+        async with get_session_factory()() as session:
             vehicle_repo = VehicleRepository(session)
             telemetry_repo = TelemetryRepository(session)
             mission_repo = MissionRepository(session)

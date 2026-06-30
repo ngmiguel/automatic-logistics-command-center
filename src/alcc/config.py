@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_name: str = "Automatic Logistics Command Center"
     app_env: str = "development"
     debug: bool = True
+    testing: bool = False
     secret_key: str = "dev-secret-key"
     api_prefix: str = "/api/v1"
 
