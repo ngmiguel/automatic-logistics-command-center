@@ -53,14 +53,18 @@ class TestIncidentRepository:
 
 @pytest.mark.asyncio
 class TestNotificationAPI:
-    async def test_list_notifications(self, client: AsyncClient, operator_headers: dict, db_session: AsyncSession):
+    async def test_list_notifications(
+        self, client: AsyncClient, operator_headers: dict, db_session: AsyncSession
+    ):
         repo = NotificationRepository(db_session)
         await repo.save(Notification(title="API Test", message="From test"))
         await db_session.commit()
         response = await client.get("/api/v1/notifications", headers=operator_headers)
         assert response.status_code == 200
 
-    async def test_list_incidents(self, client: AsyncClient, operator_headers: dict, db_session: AsyncSession):
+    async def test_list_incidents(
+        self, client: AsyncClient, operator_headers: dict, db_session: AsyncSession
+    ):
         repo = IncidentRepository(db_session)
         await repo.save(Incident(vehicle_id=uuid4(), description="Open incident"))
         await db_session.commit()

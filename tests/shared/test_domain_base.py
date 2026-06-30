@@ -1,7 +1,5 @@
 from uuid import uuid4
 
-import pytest
-
 from alcc.shared.domain.base import AggregateRoot, DomainEvent, Entity, Result
 from alcc.shared.domain.exceptions import (
     AuthorizationError,

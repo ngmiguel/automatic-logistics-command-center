@@ -4,7 +4,11 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from alcc.shared.infrastructure.logging import get_logger
-from alcc.shared.infrastructure.redis_client import NOTIFICATION_CHANNEL, TELEMETRY_CHANNEL, redis_client
+from alcc.shared.infrastructure.redis_client import (
+    NOTIFICATION_CHANNEL,
+    TELEMETRY_CHANNEL,
+    redis_client,
+)
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["WebSocket"])

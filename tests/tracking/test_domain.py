@@ -18,9 +18,7 @@ class TestTelemetryDomain:
 
     def test_to_dict(self):
         vid = uuid4()
-        snapshot = TelemetrySnapshot.from_vehicle(
-            vid, 40.0, -74.0, 50.0, 70.0, VehicleState.IDLE
-        )
+        snapshot = TelemetrySnapshot.from_vehicle(vid, 40.0, -74.0, 50.0, 70.0, VehicleState.IDLE)
         data = snapshot.to_dict()
         assert data["vehicle_id"] == str(vid)
         assert data["state"] == "idle"

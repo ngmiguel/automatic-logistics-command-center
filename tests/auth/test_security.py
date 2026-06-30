@@ -1,8 +1,6 @@
 from datetime import timedelta
 from uuid import uuid4
 
-import pytest
-
 from alcc.auth.infrastructure.security import (
     create_access_token,
     decode_access_token,

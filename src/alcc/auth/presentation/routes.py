@@ -37,8 +37,11 @@ async def register(
     )
     await repo.save(user)
     return UserResponse(
-        id=user.id, email=user.email, full_name=user.full_name,
-        role=user.role, is_active=user.is_active,
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
     )
 
 
@@ -60,6 +63,9 @@ async def login(
 @router.get("/me", response_model=UserResponse)
 async def me(user: User = Depends(get_current_user)) -> UserResponse:
     return UserResponse(
-        id=user.id, email=user.email, full_name=user.full_name,
-        role=user.role, is_active=user.is_active,
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
     )

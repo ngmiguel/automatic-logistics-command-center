@@ -92,9 +92,7 @@ class Vehicle(AggregateRoot):
         self.fuel_level = min(self.max_fuel, self.fuel_level + amount)
         self.updated_at = datetime.now(UTC)
 
-    def update_telemetry(
-        self, latitude: float, longitude: float, speed_kmh: float
-    ) -> None:
+    def update_telemetry(self, latitude: float, longitude: float, speed_kmh: float) -> None:
         self.position = GeoPosition(latitude, longitude)
         self.speed_kmh = speed_kmh
         self.updated_at = datetime.now(UTC)

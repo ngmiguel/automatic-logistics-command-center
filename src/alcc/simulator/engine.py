@@ -11,7 +11,7 @@ from alcc.notification.infrastructure.repositories import IncidentRepository, No
 from alcc.routing.domain.entities import Mission
 from alcc.routing.infrastructure.repositories import MissionRepository
 from alcc.shared.domain.enums import IncidentSeverity, NotificationType, VehicleState
-from alcc.shared.infrastructure.database.session import get_session_factory, init_db
+from alcc.shared.infrastructure.database.session import get_session_factory
 from alcc.shared.infrastructure.logging import get_logger
 from alcc.shared.infrastructure.redis_client import NOTIFICATION_CHANNEL, redis_client
 from alcc.tracking.domain.entities import TelemetrySnapshot
@@ -21,21 +21,21 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 WORLD_CITIES = [
-    (48.8566, 2.3522),    # Paris
+    (48.8566, 2.3522),  # Paris
     (40.7128, -74.0060),  # New York
     (35.6762, 139.6503),  # Tokyo
-    (51.5074, -0.1278),   # London
-    (-33.8688, 151.2093), # Sydney
-    (55.7558, 37.6173),   # Moscow
-    (-23.5505, -46.6333), # São Paulo
-    (28.6139, 77.2090),   # New Delhi
+    (51.5074, -0.1278),  # London
+    (-33.8688, 151.2093),  # Sydney
+    (55.7558, 37.6173),  # Moscow
+    (-23.5505, -46.6333),  # São Paulo
+    (28.6139, 77.2090),  # New Delhi
     (31.2304, 121.4737),  # Shanghai
-    (1.3521, 103.8198),   # Singapore
-    (52.5200, 13.4050),   # Berlin
-    (41.9028, 12.4964),   # Rome
+    (1.3521, 103.8198),  # Singapore
+    (52.5200, 13.4050),  # Berlin
+    (41.9028, 12.4964),  # Rome
     (19.4326, -99.1332),  # Mexico City
-    (30.0444, 31.2357),   # Cairo
-    (25.2048, 55.2708),   # Dubai
+    (30.0444, 31.2357),  # Cairo
+    (25.2048, 55.2708),  # Dubai
 ]
 
 
@@ -115,9 +115,7 @@ class VehicleSimulator:
                     await self._move_vehicle(vehicle, mission_repo)
                     vehicle.consume_fuel(settings.simulator_fuel_consumption_rate)
                     if random.random() < settings.simulator_incident_rate:
-                        await self._trigger_incident(
-                            vehicle, incident_repo, notification_repo
-                        )
+                        await self._trigger_incident(vehicle, incident_repo, notification_repo)
                     if vehicle.fuel_level < 10 and vehicle.fuel_level > 0:
                         await self._notify_low_fuel(vehicle, notification_repo)
 
@@ -138,9 +136,7 @@ class VehicleSimulator:
 
             await session.commit()
 
-    async def _move_vehicle(
-        self, vehicle: Vehicle, mission_repo: MissionRepository
-    ) -> None:
+    async def _move_vehicle(self, vehicle: Vehicle, mission_repo: MissionRepository) -> None:
         if not vehicle.mission_id:
             return
         mission = await mission_repo.get_by_id(vehicle.mission_id)
@@ -153,8 +149,10 @@ class VehicleSimulator:
         step_km = speed_kmh / 3600.0
 
         dist = Mission.haversine_km(
-            current.latitude, current.longitude,
-            dest.latitude, dest.longitude,
+            current.latitude,
+            current.longitude,
+            dest.latitude,
+            dest.longitude,
         )
         if dist < step_km:
             vehicle.update_telemetry(dest.latitude, dest.longitude, 0.0)
@@ -168,7 +166,9 @@ class VehicleSimulator:
             math.radians(dest.latitude - current.latitude),
         )
         lat_step = (step_km / 111.0) * math.cos(bearing)
-        lng_step = (step_km / (111.0 * math.cos(math.radians(current.latitude)))) * math.sin(bearing)
+        lng_step = (step_km / (111.0 * math.cos(math.radians(current.latitude)))) * math.sin(
+            bearing
+        )
         new_lat = current.latitude + math.degrees(lat_step)
         new_lng = current.longitude + math.degrees(lng_step)
         vehicle.update_telemetry(new_lat, new_lng, speed_kmh)
@@ -204,7 +204,11 @@ class VehicleSimulator:
         await notification_repo.save(notification)
         await redis_client.publish(
             NOTIFICATION_CHANNEL,
-            {"title": notification.title, "message": notification.message, "severity": severity.value},
+            {
+                "title": notification.title,
+                "message": notification.message,
+                "severity": severity.value,
+            },
         )
 
     async def _notify_low_fuel(

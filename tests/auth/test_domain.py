@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 import pytest
 
 from alcc.auth.domain.entities import User

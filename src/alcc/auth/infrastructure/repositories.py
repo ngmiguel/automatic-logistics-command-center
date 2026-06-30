@@ -3,9 +3,9 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from alcc.auth.domain.entities import User
 from alcc.shared.domain.enums import UserRole
 from alcc.shared.infrastructure.database.models import UserModel
-from alcc.auth.domain.entities import User
 
 
 def _user_to_domain(model: UserModel) -> User:
@@ -26,9 +26,7 @@ class UserRepository:
         self._session = session
 
     async def get_by_email(self, email: str) -> User | None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.email == email)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.email == email))
         model = result.scalar_one_or_none()
         return _user_to_domain(model) if model else None
 

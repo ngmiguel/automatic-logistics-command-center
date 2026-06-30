@@ -32,7 +32,12 @@ class TestEndToEndFlow:
     ):
         vehicle_resp = await client.post(
             "/api/v1/fleet/vehicles",
-            json={"license_plate": "E2E-001", "model": "AutoTruck", "latitude": 48.85, "longitude": 2.35},
+            json={
+                "license_plate": "E2E-001",
+                "model": "AutoTruck",
+                "latitude": 48.85,
+                "longitude": 2.35,
+            },
             headers=operator_headers,
         )
         assert vehicle_resp.status_code == 201

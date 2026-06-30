@@ -14,9 +14,7 @@ class TestTrackingRepository:
     async def test_save_and_get_latest(self, db_session: AsyncSession):
         repo = TelemetryRepository(db_session)
         vid = uuid4()
-        snapshot = TelemetrySnapshot.from_vehicle(
-            vid, 48.0, 2.0, 55.0, 80.0, VehicleState.EN_ROUTE
-        )
+        snapshot = TelemetrySnapshot.from_vehicle(vid, 48.0, 2.0, 55.0, 80.0, VehicleState.EN_ROUTE)
         await repo.save(snapshot)
         latest = await repo.get_latest_by_vehicle(vid)
         assert latest is not None
@@ -60,7 +58,9 @@ class TestTrackingAPI:
         )
         assert response.status_code == 404
 
-    async def test_get_live_telemetry(self, client: AsyncClient, operator_headers: dict, mock_redis):
+    async def test_get_live_telemetry(
+        self, client: AsyncClient, operator_headers: dict, mock_redis
+    ):
         import json
 
         vid = str(uuid4())

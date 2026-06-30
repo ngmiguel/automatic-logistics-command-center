@@ -7,7 +7,12 @@ class TestFleetAPI:
     async def test_create_vehicle(self, client: AsyncClient, operator_headers: dict):
         response = await client.post(
             "/api/v1/fleet/vehicles",
-            json={"license_plate": "ALC-TEST-01", "model": "AutoTruck X1", "latitude": 48.85, "longitude": 2.35},
+            json={
+                "license_plate": "ALC-TEST-01",
+                "model": "AutoTruck X1",
+                "latitude": 48.85,
+                "longitude": 2.35,
+            },
             headers=operator_headers,
         )
         assert response.status_code == 201
@@ -40,7 +45,9 @@ class TestFleetAPI:
             headers=operator_headers,
         )
         vehicle_id = create.json()["id"]
-        response = await client.get(f"/api/v1/fleet/vehicles/{vehicle_id}", headers=operator_headers)
+        response = await client.get(
+            f"/api/v1/fleet/vehicles/{vehicle_id}", headers=operator_headers
+        )
         assert response.status_code == 200
         assert response.json()["id"] == vehicle_id
 

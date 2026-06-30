@@ -142,8 +142,11 @@ async def create_driver(
     driver = VirtualDriver(name=body.name, experience_years=body.experience_years)
     await repo.save(driver)
     return DriverResponse(
-        id=driver.id, name=driver.name, status=driver.status,
-        vehicle_id=driver.vehicle_id, experience_years=driver.experience_years,
+        id=driver.id,
+        name=driver.name,
+        status=driver.status,
+        vehicle_id=driver.vehicle_id,
+        experience_years=driver.experience_years,
     )
 
 
@@ -157,8 +160,11 @@ async def list_drivers(
     drivers = await repo.get_available() if available_only else await repo.get_all()
     return [
         DriverResponse(
-            id=d.id, name=d.name, status=d.status,
-            vehicle_id=d.vehicle_id, experience_years=d.experience_years,
+            id=d.id,
+            name=d.name,
+            status=d.status,
+            vehicle_id=d.vehicle_id,
+            experience_years=d.experience_years,
         )
         for d in drivers
     ]

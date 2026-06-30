@@ -15,7 +15,8 @@ from alcc.routing.presentation.routes import router as routing_router
 from alcc.shared.infrastructure.database.session import init_db
 from alcc.shared.infrastructure.logging import setup_logging
 from alcc.shared.infrastructure.redis_client import redis_client
-from alcc.shared.presentation.websocket import router as ws_router, start_ws_listener
+from alcc.shared.presentation.websocket import router as ws_router
+from alcc.shared.presentation.websocket import start_ws_listener
 from alcc.simulator.engine import simulator
 from alcc.tracking.presentation.routes import router as tracking_router
 from alcc.worker.presentation.routes import router as tasks_router

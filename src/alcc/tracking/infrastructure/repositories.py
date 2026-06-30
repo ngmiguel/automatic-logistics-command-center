@@ -49,9 +49,7 @@ class TelemetryRepository:
             recorded_at=model.recorded_at,
         )
 
-    async def get_history(
-        self, vehicle_id: UUID, limit: int = 100
-    ) -> list[TelemetrySnapshot]:
+    async def get_history(self, vehicle_id: UUID, limit: int = 100) -> list[TelemetrySnapshot]:
         result = await self._session.execute(
             select(TelemetryModel)
             .where(TelemetryModel.vehicle_id == vehicle_id)

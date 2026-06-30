@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from alcc.auth.domain.entities import User
@@ -9,6 +10,7 @@ from alcc.auth.presentation.dependencies import get_current_user, require_roles
 from alcc.notification.domain.entities import Incident
 from alcc.notification.infrastructure.repositories import IncidentRepository, NotificationRepository
 from alcc.shared.domain.enums import IncidentSeverity, UserRole
+from alcc.shared.infrastructure.database.models import IncidentModel
 from alcc.shared.infrastructure.database.session import get_db_session
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
@@ -41,8 +43,13 @@ async def list_notifications(
     notifications = await repo.get_unread()
     return [
         NotificationResponse(
-            id=n.id, type=n.type.value, title=n.title, message=n.message,
-            severity=n.severity.value, vehicle_id=n.vehicle_id, is_read=n.is_read,
+            id=n.id,
+            type=n.type.value,
+            title=n.title,
+            message=n.message,
+            severity=n.severity.value,
+            vehicle_id=n.vehicle_id,
+            is_read=n.is_read,
         )
         for n in notifications
     ]
@@ -67,8 +74,11 @@ async def list_incidents(
     incidents = await repo.get_open()
     return [
         IncidentResponse(
-            id=i.id, vehicle_id=i.vehicle_id, severity=i.severity,
-            description=i.description, resolved=i.resolved,
+            id=i.id,
+            vehicle_id=i.vehicle_id,
+            severity=i.severity,
+            description=i.description,
+            resolved=i.resolved,
         )
         for i in incidents
     ]
@@ -80,26 +90,27 @@ async def resolve_incident(
     session: AsyncSession = Depends(get_db_session),
     _: User = Depends(require_roles(UserRole.OPERATOR, UserRole.ADMIN)),
 ) -> IncidentResponse:
-    repo = IncidentRepository(session)
-    from sqlalchemy import select
-    from alcc.shared.infrastructure.database.models import IncidentModel
-    result = await session.execute(
-        select(IncidentModel).where(IncidentModel.id == incident_id)
-    )
+    result = await session.execute(select(IncidentModel).where(IncidentModel.id == incident_id))
     model = result.scalar_one_or_none()
     if not model:
         raise HTTPException(status_code=404, detail="Incident not found")
     incident = Incident(
-        id=model.id, vehicle_id=model.vehicle_id,
+        id=model.id,
+        vehicle_id=model.vehicle_id,
         severity=IncidentSeverity(model.severity),
-        description=model.description, resolved=model.resolved,
-        created_at=model.created_at, updated_at=model.updated_at,
+        description=model.description,
+        resolved=model.resolved,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
     )
     incident.resolve()
     model.resolved = True
     model.resolved_at = incident.resolved_at
     await session.flush()
     return IncidentResponse(
-        id=incident.id, vehicle_id=incident.vehicle_id, severity=incident.severity,
-        description=incident.description, resolved=incident.resolved,
+        id=incident.id,
+        vehicle_id=incident.vehicle_id,
+        severity=incident.severity,
+        description=incident.description,
+        resolved=incident.resolved,
     )
