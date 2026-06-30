@@ -14,4 +14,4 @@ python-multipart>=0.0.17
 httpx>=0.28.0
 structlog>=24.4.0
 prometheus-client>=0.21.0
-websockets>=14.0
+email-validator>=2.0.0
