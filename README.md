@@ -73,8 +73,9 @@ All design artifacts live under [`docs/`](docs/):
 
 ```
 docs/
-├── design/          # Business analysis, event storming, use cases
-└── architecture/    # Domain models, infra, security, deployment
+├── design/
+│   └── 01-business-analysis.md   # Vision, actors, rules, KPIs
+└── architecture/                 # Domain models, infra, security, deployment
 ```
 
 ## Branch Strategy
