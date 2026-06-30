@@ -31,18 +31,209 @@
 
 ## Architecture
 
+### Principe général
+
+ALCC applique le **Domain-Driven Design (DDD)** : le métier est découpé en **Bounded Contexts** autonomes, chacun pouvant devenir un **microservice** indépendant. Chaque service possède une responsabilité unique, communique via **API REST** ou **événements Redis Pub/Sub**, et possède sa propre logique métier.
+
 ```
-1000 Vehicles (Simulator) ──► Redis Pub/Sub ──► WebSocket ──► Dashboard
-                                      │
-                                 FastAPI Gateway
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    │                 │                 │
-               PostgreSQL          Celery           JWT Auth
-              (Persistence)      (Async Jobs)      (RBAC)
+Utilisateur / Dashboard
+         │
+         ▼
+   API Gateway (FastAPI)  ← point d'entrée unique
+         │
+    ┌────┴────┬─────────┬──────────┬────────────┐
+    │         │         │          │            │
+  Auth     Fleet    Routing    Tracking    Notification
+    │         │         │          │            │
+    └─────────┴────Redis Pub/Sub───┴────────────┘
+                    │
+              Analytics + Celery Worker
 ```
 
-## Quick Start
+**État actuel :** monolithe modulaire (`src/alcc/`) prêt pour un split microservices.  
+**Cible :** 6 services métier + gateway, chacun avec sa propre base de données.
+
+---
+
+### Microservices — rôle de chaque module
+
+#### 1. Auth Service — Authentification & autorisation
+
+| | |
+|---|---|
+| **Code** | `src/alcc/auth/` |
+| **Endpoints** | `/api/v1/auth/register`, `/login`, `/me` |
+| **Rôle** | Gérer **qui** accède à la plateforme et **ce qu'il peut faire** |
+
+**Responsabilités :**
+- Inscription et connexion utilisateurs
+- Émission de tokens **JWT**
+- **RBAC** (contrôle d'accès par rôle) : `admin`, `dispatcher`, `operator`, `analyst`
+
+**Pourquoi séparé ?** Domaine générique — tous les services en dépendent, aucun ne doit gérer les mots de passe à leur place.
+
+---
+
+#### 2. Fleet Service — Gestion de flotte
+
+| | |
+|---|---|
+| **Code** | `src/alcc/fleet/` |
+| **Entités** | `Vehicle`, `VirtualDriver` |
+| **Endpoints** | `/api/v1/fleet/vehicles`, `/drivers`, `/stats` |
+
+**Responsabilités :**
+- CRUD véhicules (immatriculation, modèle, position)
+- États : `idle`, `en_route`, `maintenance`, `incident`, `offline`
+- Chauffeurs virtuels et assignation véhicule ↔ chauffeur
+- Règles : 1 mission max, pas de mission en maintenance
+
+**Événements :** `vehicle.registered`, `vehicle.state_changed`
+
+---
+
+#### 3. Routing Service — Missions & dispatch
+
+| | |
+|---|---|
+| **Code** | `src/alcc/routing/` |
+| **Entités** | `Mission`, `RouteWaypoint` |
+| **Endpoints** | `/api/v1/missions` |
+
+**Responsabilités :**
+- Créer des missions (origine → destination)
+- Calculer la distance (Haversine)
+- Assigner un véhicule idle, démarrer et clôturer la mission
+- Cycle : `pending` → `assigned` → `in_progress` → `completed`
+
+**Interactions :** Fleet (véhicule disponible), Simulator (mouvement vers destination)
+
+---
+
+#### 4. Tracking Service — Télémétrie temps réel
+
+| | |
+|---|---|
+| **Code** | `src/alcc/tracking/` |
+| **Données** | lat, lng, vitesse, carburant, état — **1 Hz** |
+| **Endpoints** | `/api/v1/tracking/vehicles/{id}/latest`, `/live` |
+
+**Responsabilités :**
+- Persister l'historique (PostgreSQL)
+- Cache live Redis (TTL 10 s)
+- Exposer la flotte entière en temps réel
+- Marquer offline si données > 5 s
+
+**Flux :** `Simulator → Redis Pub/Sub → Tracking → WebSocket → Dashboard`
+
+---
+
+#### 5. Notification Service — Alertes & incidents
+
+| | |
+|---|---|
+| **Code** | `src/alcc/notification/` |
+| **Entités** | `Notification`, `Incident` |
+| **Endpoints** | `/api/v1/notifications`, `/incidents` |
+
+**Responsabilités :**
+- Alertes : carburant bas, incident, retard mission, maintenance
+- Sévérité : `low`, `medium`, `high`, `critical`
+- Workflow incident ouvert → résolu par opérateur
+
+| Type | Déclencheur |
+|------|-------------|
+| `low_fuel` | Carburant < 10 % |
+| `incident` | Panne simulée ou carburant à 0 % |
+| `mission_delay` | Mission en retard |
+| `maintenance` | Maintenance planifiée |
+
+---
+
+#### 6. Analytics Service — KPIs & reporting
+
+| | |
+|---|---|
+| **Code** | `src/alcc/analytics/` |
+| **KPIs** | `FleetKPIs`, `MissionKPIs`, `IncidentKPIs` |
+| **Endpoints** | `/api/v1/analytics/fleet`, `/missions`, `/dashboard` |
+
+**Responsabilités :**
+- Taux d'utilisation flotte (objectif > 75 %)
+- Taux de complétion missions
+- Taux d'incidents
+- Dashboard consolidé
+
+---
+
+### Services transverses
+
+| Service | Code | Rôle |
+|---------|------|------|
+| **API Gateway** | `main.py` | Point d'entrée, JWT, dashboard HTML |
+| **Simulator** | `simulator/` | 1000 véhicules simulés : mouvement, carburant, incidents |
+| **WebSocket** | `shared/presentation/websocket.py` | Streaming temps réel via Redis Pub/Sub |
+| **Celery Worker** | `worker/` | Tâches async : optimisation routes, maintenance, analytics |
+| **Redis** | infra | Pub/Sub + cache télémétrie |
+| **PostgreSQL** | infra | Persistance (source de vérité) |
+
+---
+
+### Communication inter-services
+
+| Mode | Usage | Exemple |
+|------|--------|---------|
+| **Sync (REST)** | Actions immédiates | Assigner une mission |
+| **Async (Redis Pub/Sub)** | Flux temps réel | Télémétrie 1 Hz |
+| **Async (Celery)** | Calculs lourds | Optimisation routes |
+
+```mermaid
+sequenceDiagram
+    participant D as Dispatcher
+    participant R as Routing
+    participant F as Fleet
+    participant S as Simulator
+    participant Redis as Redis
+    participant WS as WebSocket
+
+    D->>R: CreateMission(origin, dest)
+    R->>F: FindIdleVehicle()
+    F-->>R: VehicleAssigned
+    R->>S: StartMission(vehicleId, route)
+
+    loop Every 1 second
+        S->>Redis: PublishTelemetry(lat, lng, speed)
+        Redis->>WS: Push to Dashboard
+    end
+```
+
+---
+
+### Classification DDD
+
+| Domaine | Type | Raison |
+|---------|------|--------|
+| Fleet Management | **Core** | Cœur métier — cycle de vie véhicules |
+| Real-Time Tracking | **Core** | Différenciateur — télémétrie 1 Hz à l'échelle |
+| Routing & Missions | **Core** | Valeur opérationnelle — dispatch |
+| Notifications | **Supporting** | Réaction aux événements |
+| Analytics | **Supporting** | Insights sur les données core |
+| Authentication | **Generic** | JWT/RBAC standard |
+
+---
+
+### Résumé en une phrase
+
+| Service | En une phrase |
+|---------|---------------|
+| **Auth** | Qui es-tu et que peux-tu faire ? |
+| **Fleet** | Quels véhicules existent et dans quel état ? |
+| **Routing** | Où doivent-ils aller et quelle mission est assignée ? |
+| **Tracking** | Où sont-ils **maintenant**, en temps réel ? |
+| **Notification** | Qu'est-ce qui demande l'attention immédiate ? |
+| **Analytics** | Comment performe la flotte sur la durée ? |
+
+---
 
 ### Docker (recommended)
 
@@ -111,11 +302,71 @@ src/alcc/
 
 ## Testing
 
-```bash
-pytest tests/ -v --cov=alcc
+Chaque module possède sa **suite de tests dédiée** et un **script d'exécution**.
+
+### Structure des tests
+
+```
+tests/
+├── shared/         # Domain base, Result, exceptions
+├── auth/           # Domain, JWT security, API
+├── fleet/          # Vehicle, VirtualDriver, API
+├── routing/        # Mission lifecycle, dispatch API
+├── tracking/       # Telemetry, repository, API
+├── notification/   # Alerts, incidents, API
+├── analytics/      # KPIs, dashboard API
+├── simulator/      # Fleet seeding, movement engine
+├── worker/         # Celery tasks, async API
+└── integration/    # Health, metrics, E2E flow
 ```
 
-## Documentation
+### Lancer tous les tests
+
+```bash
+# Linux / macOS / CI
+bash scripts/tests/run_all.sh
+
+# Windows PowerShell
+.\scripts\tests\run_all.ps1 -Module all
+
+# Python (multi-plateforme)
+python scripts/tests/run_module.py all --cov
+```
+
+### Lancer les tests par module
+
+| Module | Script | Commande directe |
+|--------|--------|------------------|
+| Shared | `scripts/tests/test_shared.sh` | `python scripts/tests/run_module.py shared` |
+| Auth | `scripts/tests/test_auth.sh` | `python scripts/tests/run_module.py auth` |
+| Fleet | `scripts/tests/test_fleet.sh` | `python scripts/tests/run_module.py fleet` |
+| Routing | `scripts/tests/test_routing.sh` | `python scripts/tests/run_module.py routing` |
+| Tracking | `scripts/tests/test_tracking.sh` | `python scripts/tests/run_module.py tracking` |
+| Notification | `scripts/tests/test_notification.sh` | `python scripts/tests/run_module.py notification` |
+| Analytics | `scripts/tests/test_analytics.sh` | `python scripts/tests/run_module.py analytics` |
+| Simulator | `scripts/tests/test_simulator.sh` | `python scripts/tests/run_module.py simulator` |
+| Worker | `scripts/tests/test_worker.sh` | `python scripts/tests/run_module.py worker` |
+| Integration | `scripts/tests/test_integration.sh` | `python scripts/tests/run_module.py integration` |
+
+### Couverture par type de test
+
+| Type | Contenu |
+|------|---------|
+| **Unit — Domain** | Entités, règles métier, value objects, événements |
+| **Unit — Security** | Hash password, JWT encode/decode |
+| **Unit — Worker** | Tâches Celery (mode eager) |
+| **Integration — API** | Endpoints REST, RBAC, codes HTTP |
+| **Integration — Repository** | Persistance SQLAlchemy |
+| **E2E** | Flux complet : véhicule → mission → dispatch → complétion |
+
+### CI/CD
+
+GitHub Actions exécute automatiquement :
+1. **Lint** — `ruff check`
+2. **Tests par module** — matrice parallèle (10 jobs)
+3. **Couverture globale** — `pytest --cov=alcc`
+
+---
 
 ```
 docs/
