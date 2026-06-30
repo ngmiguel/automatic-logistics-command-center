@@ -91,7 +91,7 @@ def celery_eager_mode():
     yield
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_redis(monkeypatch):
     store: dict[str, str] = {}
 

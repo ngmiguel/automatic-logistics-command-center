@@ -21,9 +21,8 @@ class Entity:
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
-@dataclass
 class ValueObject:
-    pass
+    """Marker base class for immutable value objects."""
 
 
 @dataclass

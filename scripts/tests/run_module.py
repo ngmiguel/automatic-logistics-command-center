@@ -41,7 +41,7 @@ def main() -> int:
         print(f"Unknown module: {module}")
         return 1
 
-    cmd = ["pytest", *paths, "-v", "--tb=short"]
+    cmd = [sys.executable, "-m", "pytest", *paths, "-v", "--tb=short"]
     if with_cov:
         cmd.extend(["--cov=alcc", "--cov-report=term-missing"])
 
