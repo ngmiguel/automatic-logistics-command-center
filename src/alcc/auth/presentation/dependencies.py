@@ -8,7 +8,6 @@ from alcc.auth.domain.entities import User
 from alcc.auth.infrastructure.repositories import UserRepository
 from alcc.auth.infrastructure.security import decode_access_token
 from alcc.shared.domain.enums import UserRole
-from alcc.shared.domain.exceptions import AuthorizationError
 from alcc.shared.infrastructure.database.session import get_db_session
 
 security_scheme = HTTPBearer()
