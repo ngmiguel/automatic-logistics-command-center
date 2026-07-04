@@ -8,6 +8,7 @@
 [![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Expo](https://img.shields.io/badge/Expo-52-000020?logo=expo&logoColor=white)](https://expo.dev/)
 [![Three.js](https://img.shields.io/badge/Three.js-3D-000000?logo=three.js&logoColor=white)](https://threejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -30,6 +31,7 @@
 | **Celery** | Async route optimization, maintenance scheduling, analytics |
 | **Dashboard** | Built-in HTML command center with live KPIs |
 | **Frontend** | React 18 SPA — 3D showroom, fleet globe, animated dashboards |
+| **Mobile** | Expo React Native — iOS/Android with native 3D animations |
 | **DevOps** | Docker Compose, GitHub Actions CI, Prometheus metrics |
 
 ## Architecture
@@ -283,6 +285,34 @@ Ouvrir [http://localhost:5173](http://localhost:5173) — le proxy Vite redirige
 
 **Stack :** React 18 · Vite · TypeScript · Tailwind CSS · Framer Motion · React Three Fiber · TanStack Query · Zustand
 
+### Mobile (Expo React Native)
+
+Application mobile révolutionnaire iOS/Android avec animations 3D natives, connectée à **tous** les services backend.
+
+```bash
+# Backend accessible sur le réseau local
+uvicorn alcc.main:app --reload --host 0.0.0.0 --app-dir src
+
+cd mobile
+cp .env.example .env   # IP LAN de votre machine
+npm install
+npx expo start
+```
+
+Scanner le QR code avec **Expo Go** ou lancer l'émulateur (`a` Android / `i` iOS).
+
+| Tab | Service API | Contenu |
+|-----|-------------|---------|
+| Dashboard | Analytics + Tracking + WS | Globe 3D, KPIs animés |
+| Flotte | Fleet | Showroom 3D par marque (M-Series, X-Drive, i-Freight) |
+| Missions | Routing | CRUD, assignation, complétion |
+| Tracking | Tracking + WS | Globe live, feed WebSocket |
+| Alertes | Notification | Incidents + notifications |
+| Analytics | Analytics | Graphiques SVG animés |
+| Tasks | Celery Worker | Déclenchement tâches async |
+
+**Stack mobile :** Expo 52 · React Native · Reanimated · React Three Fiber Native · TanStack Query · SecureStore
+
 ### Local Development
 
 ```bash
@@ -342,6 +372,13 @@ frontend/src/
 ├── pages/          # Login, Dashboard, Fleet, Missions, Tracking…
 ├── hooks/          # WebSocket hook
 └── store/          # Zustand auth persistence
+
+mobile/
+├── app/            # Expo Router screens (tabs + login)
+├── src/api/        # Axios + all REST services
+├── src/components/3d/  # R3F native vehicle models, globe
+├── src/hooks/      # WebSocket hook
+└── src/store/      # SecureStore auth persistence
 ```
 
 ## Testing
