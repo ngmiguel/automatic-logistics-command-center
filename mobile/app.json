@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "ALCC Command",
+    "slug": "alcc-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "alcc",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0a0e1a",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.alcc.command"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0e1a"
+      },
+      "package": "io.alcc.command"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
