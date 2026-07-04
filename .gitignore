@@ -70,6 +70,19 @@ Thumbs.db
 logs/
 data/local/
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# Mobile
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+
+# Root stray lockfiles
+/package-lock.json
+
 # Database
 *.db
 *.sqlite3

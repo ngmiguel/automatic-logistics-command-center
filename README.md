@@ -7,6 +7,8 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Three.js](https://img.shields.io/badge/Three.js-3D-000000?logo=three.js&logoColor=white)](https://threejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Overview
@@ -27,6 +29,7 @@
 | **Analytics** | Fleet/mission/incident KPIs, full dashboard summary |
 | **Celery** | Async route optimization, maintenance scheduling, analytics |
 | **Dashboard** | Built-in HTML command center with live KPIs |
+| **Frontend** | React 18 SPA — 3D showroom, fleet globe, animated dashboards |
 | **DevOps** | Docker Compose, GitHub Actions CI, Prometheus metrics |
 
 ## Architecture
@@ -242,9 +245,43 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open [http://localhost:8000](http://localhost:8000) for the command center dashboard.
+| Service | URL |
+|---------|-----|
+| **React Frontend** | [http://localhost:3000](http://localhost:3000) |
+| **API + Swagger** | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| **Backend Dashboard** | [http://localhost:8000](http://localhost:8000) |
 
-API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+### Frontend (React + Three.js)
+
+Interface web professionnelle avec animations 3D, connectée à **tous** les microservices backend.
+
+```bash
+# Terminal 1 — backend
+docker compose up api postgres redis
+# ou: uvicorn alcc.main:app --reload --app-dir src
+
+# Terminal 2 — frontend dev
+cd frontend
+npm install
+npm run dev
+```
+
+Ouvrir [http://localhost:5173](http://localhost:5173) — le proxy Vite redirige `/api` et `/ws` vers le backend.
+
+**Pages :**
+
+| Route | Service API | Contenu |
+|-------|-------------|---------|
+| `/login` | Auth | Showroom 3D rotatif, particules, bloom |
+| `/dashboard` | Analytics + Tracking + WS | KPIs animés, globe 3D temps réel |
+| `/fleet` | Fleet | Cartes véhicules avec previews 3D (M-Series, X-Drive, i-Freight) |
+| `/missions` | Routing | CRUD missions, assignation, complétion |
+| `/tracking` | Tracking + WS | Globe fleet live, télémétrie WebSocket |
+| `/notifications` | Notification | Alertes et résolution d'incidents |
+| `/analytics` | Analytics | Graphiques Recharts animés |
+| `/tasks` | Celery Worker | Déclenchement tâches async |
+
+**Stack :** React 18 · Vite · TypeScript · Tailwind CSS · Framer Motion · React Three Fiber · TanStack Query · Zustand
 
 ### Local Development
 
@@ -298,6 +335,13 @@ src/alcc/
 ├── simulator/      # 1000-vehicle engine
 ├── worker/         # Celery tasks
 └── shared/         # Domain base, DB, Redis, WebSocket
+
+frontend/src/
+├── api/            # Axios client + all service modules
+├── components/3d/  # VehicleModel, ShowroomScene, FleetGlobe
+├── pages/          # Login, Dashboard, Fleet, Missions, Tracking…
+├── hooks/          # WebSocket hook
+└── store/          # Zustand auth persistence
 ```
 
 ## Testing

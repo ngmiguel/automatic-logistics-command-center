@@ -27,7 +27,11 @@ class Settings(BaseSettings):
     simulator_incident_rate: float = 0.001
     simulator_fuel_consumption_rate: float = 0.05
 
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+    ]
 
 
 @lru_cache
