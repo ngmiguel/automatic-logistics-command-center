@@ -118,7 +118,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt && pip install -e .
       - run: python -m pytest tests/ -v --tb=short --cov=alcc --cov-report=term-missing --cov-report=html
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: htmlcov/
