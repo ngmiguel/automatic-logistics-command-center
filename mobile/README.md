@@ -47,3 +47,15 @@ Ensure backend CORS includes your dev origin or use `--host 0.0.0.0` for uvicorn
 |-------|----------|
 | admin@alcc.io | admin1234 |
 | operator@alcc.io | operator123 |
+
+## Docker
+
+Inclus dans la stack racine :
+
+```bash
+docker compose up --build
+```
+
+Expo dev server sur [http://localhost:8081](http://localhost:8081) — scanner le QR avec **Expo Go**.
+
+Sur appareil physique, configurez `EXPO_PUBLIC_API_URL` dans `docker-compose.yml` avec l'IP LAN de votre PC.

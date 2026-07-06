@@ -242,16 +242,27 @@ sequenceDiagram
 
 ### Docker (recommended)
 
+Lance **toute la stack** en une seule commande — backend, worker Celery, simulateur 1000 véhicules, frontend web et serveur Expo mobile :
+
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-| Service | URL |
-|---------|-----|
-| **React Frontend** | [http://localhost:3000](http://localhost:3000) |
-| **API + Swagger** | [http://localhost:8000/docs](http://localhost:8000/docs) |
-| **Backend Dashboard** | [http://localhost:8000](http://localhost:8000) |
+| Service | URL | Description |
+|---------|-----|-------------|
+| **React Frontend** | [http://localhost:3000](http://localhost:3000) | SPA 3D (proxy `/api` + `/ws` intégré) |
+| **API + Swagger** | [http://localhost:8000/docs](http://localhost:8000/docs) | REST API + docs OpenAPI |
+| **Backend Dashboard** | [http://localhost:8000](http://localhost:8000) | Dashboard HTML temps réel |
+| **Expo Mobile** | [http://localhost:8081](http://localhost:8081) | Dev server — scanner QR avec Expo Go |
+| **PostgreSQL** | `localhost:5432` | Base de données |
+| **Redis** | `localhost:6379` | Cache + Pub/Sub + Celery broker |
+
+**Comptes démo** (seed automatique au démarrage) : `admin@alcc.io` / `admin1234`
+
+**Mobile avec Expo Go :** le conteneur `mobile` expose le packager sur le port 8081. Sur téléphone, l'API est accessible via l'IP de votre machine (`EXPO_PUBLIC_API_URL`). Pour émulateur Android, remplacez par `http://10.0.2.2:8000` dans `docker-compose.yml`.
+
+Services démarrés : `postgres` → `seed` (users) → `api` (simulateur) → `worker` → `frontend` + `mobile`.
 
 ### Frontend (React + Three.js)
 
@@ -442,10 +453,35 @@ python scripts/tests/run_module.py all --cov
 
 ### CI/CD
 
-GitHub Actions exécute automatiquement :
-1. **Lint** — `ruff check`
-2. **Tests par module** — matrice parallèle (10 jobs)
-3. **Couverture globale** — `pytest --cov=alcc`
+GitHub Actions s'exécute automatiquement sur chaque **push** et **pull request** vers `main` / `develop`.
+
+#### CI (`.github/workflows/ci.yml`)
+
+| Job | Déclencheur | Action |
+|-----|-------------|--------|
+| **changes** | Toujours | Détection des fichiers modifiés (paths-filter) |
+| **backend-lint** | `src/`, `tests/` | `ruff check` |
+| **backend-test-modules** | Backend | Matrice parallèle — 10 modules pytest |
+| **backend-coverage** | Backend | Couverture globale + artefact HTML |
+| **frontend** | `frontend/` | `npm ci` + `npm run build` (TypeScript + Vite) |
+| **mobile** | `mobile/` | `npm ci` + `npm run lint` (TypeScript) |
+| **docker-validate** | Docker / compose | `docker compose config` |
+| **docker-build** | Docker | Build images api, worker, frontend, mobile (cache GHA) |
+| **stack-smoke** | Docker + API | Postgres → seed → API → `/health` + analytics |
+| **ci-success** | Gate final | Vérifie que tous les jobs requis ont réussi |
+
+Fonctionnalités : annulation des runs concurrents, cache pip/npm, artefacts de couverture, smoke test E2E Docker.
+
+#### CD (`.github/workflows/cd.yml`)
+
+Sur push vers **`main`** ou tag **`v*.*.*`** :
+- Publication des images Docker sur **GitHub Container Registry** (`ghcr.io`)
+- Images : `alcc-api`, `alcc-worker`, `alcc-frontend`, `alcc-mobile`
+- Release notes automatiques sur tag semver
+
+#### Dependabot (`.github/dependabot.yml`)
+
+Mises à jour hebdomadaires : Python (pip), npm (frontend + mobile), GitHub Actions.
 
 ---
 
