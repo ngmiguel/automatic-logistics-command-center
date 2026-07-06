@@ -65,7 +65,7 @@ export default function NotificationsScreen() {
         <Text style={[styles.section, { marginTop: 20 }]}>Notifications ({notifications.length})</Text>
         {notifications.slice(0, 15).map((n, i) => (
           <SlideIn key={n.id} index={i}>
-            <GlassCard style={[styles.card, !n.is_read && styles.unread]}>
+            <GlassCard style={[styles.card, !n.is_read ? styles.unread : undefined]}>
               <View style={styles.row}>
                 <Text style={styles.notifTitle}>{n.title}</Text>
                 {!n.is_read && <View style={styles.unreadDot} />}

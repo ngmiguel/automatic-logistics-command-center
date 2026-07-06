@@ -151,6 +151,8 @@ jobs:
     if: >-
       needs.changes.outputs.mobile == 'true'
       || github.event_name == 'pull_request'
+      || github.ref == 'refs/heads/main'
+      || github.ref == 'refs/heads/develop'
     defaults:
       run:
         working-directory: mobile
@@ -162,6 +164,8 @@ jobs:
           cache: npm
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
+      - name: Align Expo peer dependencies
+        run: npx expo install --fix
       - run: npm run lint
 
   # ── Docker ──────────────────────────────────────────────────────────────

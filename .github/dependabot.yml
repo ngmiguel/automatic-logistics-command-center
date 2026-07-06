@@ -23,6 +23,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        versions: [">=19"]
+      - dependency-name: "react-native"
+        versions: [">=0.77"]
 
   - package-ecosystem: npm
     directory: "/mobile"
@@ -36,6 +40,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        versions: [">=19"]
+      - dependency-name: "react-native"
+        versions: [">=0.77"]
 
   - package-ecosystem: github-actions
     directory: "/"
