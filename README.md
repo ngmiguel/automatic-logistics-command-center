@@ -466,7 +466,9 @@ GitHub Actions s'exécute automatiquement sur chaque **push** et **pull request*
 | **frontend** | `frontend/` | `npm ci` + `npm run build` (TypeScript + Vite) |
 | **mobile** | `mobile/` | `npm ci` + `npm run lint` (TypeScript) |
 | **docker-validate** | Docker / compose | `docker compose config` |
-| **docker-build** | Docker | Build images api, worker, frontend, mobile (cache GHA) |
+| **docker-build-backend** | Docker | Build images api + worker |
+| **docker-build-frontend** | Frontend + Docker | Build image frontend (si build OK) |
+| **docker-build-mobile** | Mobile + Docker | Build image mobile (si lint OK) |
 | **stack-smoke** | Docker + API | Postgres → seed → API → `/health` + analytics |
 | **ci-success** | Gate final | Vérifie que tous les jobs requis ont réussi |
 
@@ -481,7 +483,8 @@ Sur push vers **`main`** ou tag **`v*.*.*`** :
 
 #### Dependabot (`.github/dependabot.yml`)
 
-Mises à jour hebdomadaires : Python (pip), npm (frontend + mobile), GitHub Actions.
+Mises à jour hebdomadaires : Python (pip), npm (frontend + mobile), GitHub Actions.  
+Les mises à jour **semver major** npm (React 19, Tailwind 4, etc.) sont ignorées pour éviter les ruptures de build.
 
 ---
 
