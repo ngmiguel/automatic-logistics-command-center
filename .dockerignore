@@ -1,0 +1,17 @@
+__pycache__
+*.py[cod]
+.venv
+venv
+.env
+.git
+.github
+frontend/node_modules
+frontend/dist
+mobile/node_modules
+mobile/.expo
+*.md
+tests
+.pytest_cache
+.ruff_cache
+htmlcov
+data/local

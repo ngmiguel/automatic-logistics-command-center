@@ -1,36 +1,4 @@
 services:
-  api:
-    build: .
-    ports:
-      - "8000:8000"
-    env_file: .env.example
-    environment:
-      DATABASE_URL: postgresql+asyncpg://alcc:alcc_secret@postgres:5432/alcc_db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    env_file: .env.example
-    environment:
-      DATABASE_URL: postgresql+asyncpg://alcc:alcc_secret@postgres:5432/alcc_db
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-    depends_on:
-      - redis
-      - postgres
-    restart: unless-stopped
-
   postgres:
     image: postgres:16-alpine
     environment:
@@ -46,6 +14,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -56,13 +25,90 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
+
+  seed:
+    build: .
+    command: ["python", "scripts/seed_users.py"]
+    env_file: .env.example
+    environment:
+      DATABASE_URL: postgresql+asyncpg://alcc:alcc_secret@postgres:5432/alcc_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env.example
+    environment:
+      DATABASE_URL: postgresql+asyncpg://alcc:alcc_secret@postgres:5432/alcc_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost:8000","http://localhost:8081"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    env_file: .env.example
+    environment:
+      DATABASE_URL: postgresql+asyncpg://alcc:alcc_secret@postgres:5432/alcc_db
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
     ports:
       - "3000:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mobile:
+    build: ./mobile
+    ports:
+      - "8081:8081"
+    environment:
+      EXPO_PUBLIC_API_URL: http://host.docker.internal:8000
+      EXPO_PUBLIC_WS_URL: ws://host.docker.internal:8000
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
+      REACT_NATIVE_PACKAGER_HOSTNAME: localhost
+      CI: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      api:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
     restart: unless-stopped
 
 volumes:
